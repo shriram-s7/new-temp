@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://18.207.132.140:8000";
+const API_BASE_URL = "https://ntqtyvyayk0.execute-api.us-east-1.amazonaws.com/prod";
 
 export const predictBreast = async (formData) => {
     return axios.post(`${API_BASE_URL}/predict/breast`, formData, {
