@@ -1,7 +1,9 @@
 import axios from "axios";
 
 const API_BASE_URL =
-  "https://m7ss1ku6o0.execute-api.us-east-1.amazonaws.com/prod";
+  "http://32.192.251.156:8000";
+
+// --- Disease Prediction Endpoints ---
 
 export const predictBreast = async (formData) => {
   return axios.post(`${API_BASE_URL}/predict/breast`, formData, {
@@ -23,6 +25,24 @@ export const predictPCOS = async (formData) => {
   return axios.post(`${API_BASE_URL}/predict/pcos`, formData, {
     headers: {
       "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
+// --- Patient Session Endpoints ---
+
+export const startPatientSession = async (data) => {
+  return axios.post(`${API_BASE_URL}/patient/start`, data, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};
+
+export const savePatientTest = async (data) => {
+  return axios.post(`${API_BASE_URL}/patient/test/save`, data, {
+    headers: {
+      "Content-Type": "application/json",
     },
   });
 };

@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Activity, Stethoscope, Dna, LayoutDashboard, LogOut } from 'lucide-react';
+import { Activity, Stethoscope, Dna, LayoutDashboard, LogOut, Lock } from 'lucide-react';
+import { PatientContext } from '../context/PatientContext';
 
 const Sidebar = () => {
+    const { isSessionActive } = useContext(PatientContext);
+
     const navItems = [
         { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
         { name: 'Breast Cancer Analysis', path: '/breast', icon: <Activity size={20} /> },
@@ -23,21 +26,34 @@ const Sidebar = () => {
                 <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 px-2">
                     Diagnostic Modules
                 </div>
-                {navItems.map((item) => (
-                    <NavLink
-                        key={item.path}
-                        to={item.path}
-                        className={({ isActive }) =>
-                            `flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${isActive
-                                ? 'bg-teal-50 text-teal-700'
-                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                            }`
-                        }
-                    >
-                        {item.icon}
-                        {item.name}
-                    </NavLink>
-                ))}
+                {navItems.map((item) => {
+                    const isDisabled = !isSessionActive && item.path !== '/dashboard';
+                    return (
+                        <NavLink
+                            key={item.path}
+                            to={item.path}
+                            onClick={(e) => {
+                                if (isDisabled) {
+                                    e.preventDefault();
+                                }
+                            }}
+                            className={({ isActive }) =>
+                                `flex items-center justify-between px-3 py-2.5 rounded-lg font-medium transition-colors ${isDisabled
+                                    ? 'text-slate-400 opacity-60 cursor-not-allowed grayscale'
+                                    : isActive
+                                        ? 'bg-teal-50 text-teal-700'
+                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                }`
+                            }
+                        >
+                            <div className="flex items-center gap-3">
+                                {item.icon}
+                                {item.name}
+                            </div>
+                            {isDisabled && <Lock size={14} className="opacity-50" />}
+                        </NavLink>
+                    );
+                })}
             </div>
 
             <div className="p-4 border-t border-slate-200">

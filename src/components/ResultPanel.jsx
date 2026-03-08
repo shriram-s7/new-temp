@@ -1,9 +1,12 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { AlertCircle, CheckCircle, ShieldAlert } from 'lucide-react';
+import { AlertCircle, CheckCircle, ShieldAlert, BookOpen } from 'lucide-react';
+import { getClinicalInterpretation } from '../utils/ClinicalInterpretation';
 
 const ResultPanel = ({ result, type }) => {
     if (!result) return null;
+
+    const interpretation = getClinicalInterpretation(type, result);
 
     const getStatusColor = (res) => {
         const val = (res.diagnosis || res.predicted_stage || res.class || res.prediction || '').toLowerCase();
@@ -64,7 +67,33 @@ const ResultPanel = ({ result, type }) => {
             </div>
 
             <div className="p-6 space-y-6">
-                {result.explanation && (
+                {interpretation && (
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-800 border-b border-slate-200 pb-3 mb-4 flex items-center gap-2">
+                            <BookOpen size={20} className="text-teal-600" />
+                            Clinical Interpretation
+                        </h3>
+                        <div className="space-y-5">
+                            <div>
+                                <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Explanation</span>
+                                <p className="text-sm text-slate-700 leading-relaxed">{interpretation.explanation}</p>
+                            </div>
+                            <div>
+                                <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Clinical Significance</span>
+                                <p className="text-sm text-slate-700 leading-relaxed">{interpretation.significance}</p>
+                            </div>
+                            <div className="bg-teal-50/50 p-3 rounded-lg border border-teal-100">
+                                <span className="block text-xs font-bold text-teal-600 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                                    <ShieldAlert size={14} />
+                                    Recommended Next Step
+                                </span>
+                                <p className="text-sm font-medium text-teal-900">{interpretation.recommendation}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {result.explanation && !interpretation && (
                     <div>
                         <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-3">Clinical Explanation</h3>
                         <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
@@ -79,7 +108,7 @@ const ResultPanel = ({ result, type }) => {
                     </div>
                 )}
 
-                {result.recommended_actions && (
+                {result.recommended_actions && !interpretation && (
                     <div>
                         <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-2">
                             <ShieldAlert size={16} className="text-teal-600" />
@@ -118,6 +147,55 @@ const ResultPanel = ({ result, type }) => {
                         <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-3">Heatmap Visualization</h3>
                         <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 flex justify-center p-2">
                             <img src={`data:image/jpeg;base64,${result.heatmap_overlay}`} alt="Heatmap" className="max-w-full h-auto rounded-lg shadow-sm" />
+                        </div>
+                    </div>
+                )}
+
+                {type === 'cervical' && (
+                    <div>
+                        <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-3">Cervical Disease Progression Overview</h3>
+                        <div className="bg-white border text-sm border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-slate-50 border-b border-slate-200">
+                                        <th className="px-4 py-3 font-semibold text-slate-700">Stage</th>
+                                        <th className="px-4 py-3 font-semibold text-slate-700">Risk Level</th>
+                                        <th className="px-4 py-3 font-semibold text-slate-700">Clinical Meaning</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {[
+                                        { stage: 'Normal', risk: 'Very Low', meaning: 'Healthy cervical epithelial cells with no abnormal dysplasia.', color: 'bg-green-50/60' },
+                                        { stage: 'CIN1', risk: 'Low', meaning: 'Mild dysplasia affecting the lower epithelial layer, often associated with HPV infection.', color: 'bg-yellow-50/60' },
+                                        { stage: 'CIN2', risk: 'Moderate', meaning: 'Moderate precancerous changes extending through two-thirds of the epithelial thickness.', color: 'bg-orange-50/60' },
+                                        { stage: 'CIN3', risk: 'High', meaning: 'Severe dysplasia involving most of the epithelial layer and high risk of progression to cancer.', color: 'bg-red-50/60' },
+                                        { stage: 'Cancer', risk: 'Critical', meaning: 'Invasive cervical carcinoma where malignant cells penetrate beyond the epithelial layer.', color: 'bg-rose-100/60' }
+                                    ].map((row, idx) => {
+                                        const rawVal = (result.diagnosis || result.predicted_stage || result.class || result.prediction || '').toLowerCase();
+                                        let isMatch = false;
+                                        if (row.stage === 'Normal' && (rawVal.includes('normal') || rawVal.includes('healthy'))) isMatch = true;
+                                        if (row.stage === 'CIN1' && (rawVal.includes('cin1') || rawVal.includes('cin 1') || rawVal.includes('stage 1'))) isMatch = true;
+                                        if (row.stage === 'CIN2' && (rawVal.includes('cin2') || rawVal.includes('cin 2') || rawVal.includes('stage 2'))) isMatch = true;
+                                        if (row.stage === 'CIN3' && (rawVal.includes('cin3') || rawVal.includes('cin 3') || rawVal.includes('stage 3'))) isMatch = true;
+                                        if (row.stage === 'Cancer' && (rawVal.includes('cancer') || rawVal.includes('carcinoma') || rawVal.includes('stage 4') || rawVal.includes('stage 5'))) isMatch = true;
+
+                                        return (
+                                            <tr key={idx} className={`border-b border-slate-100 last:border-0 transition-colors ${isMatch ? row.color : 'bg-white hover:bg-slate-50/50'}`}>
+                                                <td className="px-4 py-3 font-semibold text-slate-800 flex items-center gap-2">
+                                                    {isMatch && <CheckCircle size={14} className={row.stage === 'Normal' ? 'text-green-600' : 'text-red-600'} />}
+                                                    {row.stage}
+                                                </td>
+                                                <td className="px-4 py-3 text-slate-600 font-medium">
+                                                    <span className={`px-2 py-1 rounded-md text-xs font-bold ${isMatch ? 'bg-white/60 shadow-sm' : 'bg-slate-100'}`}>
+                                                        {row.risk}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-slate-600">{row.meaning}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 )}

@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import { Activity, Beaker, CheckCircle } from 'lucide-react';
 import ImageUploader from '../components/ImageUploader';
 import ResultPanel from '../components/ResultPanel';
-import { predictBreast } from '../services/api';
+import { predictBreast, savePatientTest } from '../services/api';
 import { PatientContext } from '../context/PatientContext';
 
 const BreastCancer = () => {
@@ -48,7 +48,10 @@ const BreastCancer = () => {
         try {
             const data = new FormData();
             data.append('file', file);
+            data.append('patient_id', patient.patientId);
+            data.append('patient_name', patient.name);
             data.append('age', patient.age);
+            data.append('phone', patient.phone);
 
             // Append all clinical data
             Object.keys(formData).forEach(key => {
@@ -58,6 +61,21 @@ const BreastCancer = () => {
             const response = await predictBreast(data);
             const resData = response.data;
             setResult(resData);
+
+            // Save test to backend (DynamoDB)
+            try {
+                await savePatientTest({
+                    patient_id: patient.patientId,
+                    test_type: 'Breast Cancer',
+                    model_input: formData,
+                    prediction: resData.diagnosis || null,
+                    confidence: resData.final_score || resData.confidence || null,
+                    heatmap: resData.heatmap_overlay || resData.heatmap || null,
+                    overlay_map: resData.overlay_map || null
+                });
+            } catch (saveErr) {
+                console.error('Failed to save test result to DynamoDB:', saveErr);
+            }
 
             // Save to history
             const history = JSON.parse(localStorage.getItem('auramed_history')) || [];
