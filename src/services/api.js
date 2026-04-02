@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API_BASE_URL =
-  "http://35.175.120.93:8000";
+  "https://7oexr7wqi2.execute-api.us-east-1.amazonaws.com/prod";
 
 // --- Disease Prediction Endpoints ---
 
